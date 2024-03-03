@@ -1,15 +1,33 @@
 ;; EQUATES
 
+bytes_per_word					EQU 02h
+
+;; Modes
+game_mode_waiting_for_game		EQU 00h
+game_mode_waiting_for_vblank	EQU 01h
+game_mode_exit					EQU 02h
+
 ;; Ports
 port_pic_cmd					EQU 20h ; PIC Command port
-	val_pic_eoi						EQU 20h ; PIC "End of Interrupt" value to acknowledge interrupt
+	val_pic_eoi					EQU 20h ; PIC "End of Interrupt" value to acknowledge interrupt
 port_pic_data					EQU 21h ; PIC Data port
-
+port_vga_register				EQU 3DAh
+	vga_address_mode_ctrl1		EQU 00h
+	vga_address_palette0		EQU 10h
 ;; Memory Segments
 segment_interrupt_vector_table	EQU 0000h
+segment_video_memory			EQU 0B800h
 
 ;; Masks
 mask_enable_vertical_retrace	EQU 0DFh ; 1101 1111
+
+;; Colors
+color_black						equ 00h
+color_green						equ 0Ah
+
+;; Video memory words
+video_memory_size_bytes			EQU 4000h
+video_memory_size_words			EQU video_memory_size_bytes / bytes_per_word
 
 ;; Interrupts
 int_video_10					EQU	10h

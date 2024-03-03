@@ -1,20 +1,12 @@
 TITLE PCjrOB Test Program
 
-;MAIN
-;	SETUP_DS +
-;	SAVE +
-;		call	SAVE_VIDEO_MODE +
-;		call	SAVE_VBLANK_INT_VEC +
-;		call	SAVE_HW_INT_MASKS
-;	SET +
-;		call	SET_VIDEO_MODE +
-;		call	SET_VBLANK_INT_VEC +
-;		call	SET_HW_INT_MASKS +
-;	RESTORE +
-;		call	RESTORE_HW_INT_MASKS +
-;		call	RESTORE_VBLANK_INT_VEC +
-;		call	RESTORE_VIDEO_MODE +
-;	EXIT2DOS
+; This program will send the "TEST" command to R.O.B., turning on the head LED
+
+;; TODO -
+; 1.) Add keyboard reading (esc to quit) to send up, down, left, right, a (open), b (close)
+; 2.) Display command on second page
+; 3.) Make the command storage more compact/efficient
+; 4.) Fix the initial entry to the loop, shouldn't need repeat the setup stuff
 
 INCLUDE EQUATES.ASM
 
@@ -23,6 +15,19 @@ CODESEG SEGMENT
 ORG 100h
 PROGRAM: ; Needed for COM to later terminate the program
 jmp	MAIN
+
+FILL_COLOR PROC NEAR
+	push	es
+	mov		ax,segment_video_memory
+	mov		es,ax
+	xor		di,di ; B800:0000
+	mov		ax, (color_black SHL 12) OR (color_black SHL 8) OR (color_black SHL 4) OR color_black 
+	mov		cx,video_memory_size_words
+	cld
+	rep		stosw
+	pop		es
+	ret
+FILL_COLOR ENDP
 
 ;; Video Mode Functions
 SAVE_VIDEO_MODE PROC NEAR
@@ -48,15 +53,41 @@ RESTORE_VIDEO_MODE ENDP
 VBLANK_INT PROC NEAR
 	sti ; Re-enable interrupts so other timers can fire
 	push	ax
+	push	dx
 	push	ds
+		;; Setup DS - can't assume it's good
 		mov		ax,cs
 		mov		ds,ax
-		mov		al,[ram_vblank_counter]
-		inc		al
-		mov		[ram_vblank_counter],al
+		;; Check if game was still processing frame
+		mov		al,[ram_game_mode]
+		cmp		al,game_mode_waiting_for_vblank
+		jnz		VBLANK_UNROLL ; if it was, just bail out
+		
+		;; VBLANK START WORK -----
+		; Get color
+		mov		al,[current_color]
+		; swap palette 0
+		mov		dx,port_vga_register
+		cli ;; TODO - also mask keyboard interrupt
+			in		al,dx
+			mov		al,vga_address_palette0
+			out		dx,al ; Put VGA register into address state
+			mov		al,[current_color]
+			out		dx,al
+			mov		al,vga_address_mode_ctrl1
+			out		dx,al  ; Set address back to < 10h
+			in		al,dx ; Put VGA register into address state, probably isn't necessary
+		sti
+		;; VBLANK END WORK -----
+		
+		;; Update game state
+		mov		al,game_mode_waiting_for_game
+		mov		[ram_game_mode],al
+VBLANK_UNROLL:
 		mov		al,val_pic_eoi
 		out		port_pic_cmd,al ; Acknowledge the hardware interrupt
 	pop		ds
+	pop		dx
 	pop		ax
 	iret
 VBLANK_INT ENDP
@@ -82,8 +113,6 @@ SET_VBLANK_INT_VEC PROC NEAR
 		mov		es:[int_vblank_0D_segment],ax
 	sti
 	pop		es
-	xor		al,al
-	mov		[ram_vblank_counter],al
 	ret
 SET_VBLANK_INT_VEC ENDP
 RESTORE_VBLANK_INT_VEC PROC NEAR
@@ -130,6 +159,7 @@ SAVE PROC NEAR
 SAVE ENDP
 SET PROC NEAR
 	call	SET_VIDEO_MODE
+	call	FILL_COLOR
 	call	SET_VBLANK_INT_VEC
 	call	SET_HW_INT_MASKS
 	ret
@@ -153,11 +183,45 @@ MAIN PROC NEAR
 
 	call	SAVE
 ;; START PROGRAM ------------
+	; SET INITIAL MODE
+	mov		al,game_mode_waiting_for_game
+	mov		[ram_game_mode],al
+	; SET INITIAL COUNTER
+	xor		al,al
+	mov		[ram_vblank_counter],al
+	;; Look up first color
+	mov		al,[ram_vblank_counter]
+	mov		bx,offset test_command_array
+	xlat
+	mov		[current_color],al
+	mov		al,game_mode_waiting_for_vblank
+	mov		[ram_game_mode],al
+	
+	; START 
 	call	SET
 MAINLOOP:
+	mov		al,[ram_game_mode]
+	cmp		al,game_mode_waiting_for_vblank
+	jz		MAINLOOP ;; Sit here until VBLANK fires
+
+	; Inc the vblank counter
 	mov		al,[ram_vblank_counter]
-	cmp		al,0FFh
-	jnz		MAINLOOP
+	inc		al
+	mov		[ram_vblank_counter],al
+	
+	cmp		al,10h ; Check if end of sequence
+	jz		MAINLOOPEND ;
+	
+	;; Else look up the next color and store it
+	mov		al,[ram_vblank_counter]
+	mov		bx,offset test_command_array
+	xlat
+	mov		[current_color],al
+	;; Set the mode to waiting for VBLANK
+	mov		al,game_mode_waiting_for_vblank
+	mov		[ram_game_mode],al
+	jmp		MAINLOOP
+MAINLOOPEND:
 ;; END PROGRAM ------------
 	call	RESTORE
 	jmp		EXIT2DOS ;; Intentional jump to not leave data on the stack
@@ -168,6 +232,40 @@ ram_hw_int_masks db ?
 ram_vblank_int_offset dw ?
 ram_vblank_int_segment dw ?
 ram_vblank_counter db ?
+ram_game_mode db ?
+
+
+current_color db ?
+
+; References for commands
+;https://www.nesdev.org/wiki/R.O.B.
+;http://problemkaputt.de/everynes.htm#robroboticoperatingbuddy
+; Preface - 000101 w1x1y1z0
+; 0101 - up 2 steps
+; 1101 - down 2 steps
+
+; 1100 - up 1 steps
+; 0010 - down 1 steps
+
+; 0100 - turns body left 1 steps
+; 1000 - turns body right 1 steps
+
+; 0110 - close the arms
+; 1010 - open the arms
+
+; 1001 - turn the head LED on
+; 0001 - Reset
+;test_command_array   0000 0000 0000 0000
+;                     0000 0101 w1x1 y1z0
+;                     00h,00h,00h,00h,00h,01h,00h,01h,0wh,01h,0xh,01h,0yh,01h,0zh,00h
+
+; In this case, just the Turn HEAD LED ON COMMAND IS SENT
+; Currently just hardcodes the color into it
+test_command_array db 00h,00h,00h,00h,00h,0Ah,00h,0Ah,0Ah,0Ah,00h,0Ah,00h,0Ah,0Ah,00h 
+
+
+
+
 
 CODESEG ENDS
 END PROGRAM
