@@ -234,38 +234,34 @@ ram_vblank_int_segment dw ?
 ram_vblank_counter db ?
 ram_game_mode db ?
 
-
 current_color db ?
 
 ; References for commands
 ;https://www.nesdev.org/wiki/R.O.B.
 ;http://problemkaputt.de/everynes.htm#robroboticoperatingbuddy
 ; Preface - 000101 w1x1y1z0
-; 0101 - up 2 steps
-; 1101 - down 2 steps
+command_words dw 00010101010100B ;0000 - Unused
+dw 00010101010110;0001 - Reset
+dw 00010101010100;0010 - Down1 (1-step)
+dw 00010101011110;0011 - Unused
+dw 00010101110100;0100 - Left (1-step)
+dw 00010101110110;0101 - Up2 (2-steps)
+dw 00010101111100;0110 - Close (Arms)
+dw 00010101111110;0111 - Unused
 
-; 1100 - up 1 steps
-; 0010 - down 1 steps
-
-; 0100 - turns body left 1 steps
-; 1000 - turns body right 1 steps
-
-; 0110 - close the arms
-; 1010 - open the arms
-
-; 1001 - turn the head LED on
-; 0001 - Reset
-;test_command_array   0000 0000 0000 0000
-;                     0000 0101 w1x1 y1z0
-;                     00h,00h,00h,00h,00h,01h,00h,01h,0wh,01h,0xh,01h,0yh,01h,0zh,00h
+dw 00010111010100;1000 - Right (1-step)
+dw 00010111010110;1001 - TEST (LED ON)
+dw 00010111011100;1010 - Open (Arms)
+dw 00010111011110;1011 - Unused
+dw 00010111110100;1100 - Up1 (1-step)
+dw 00010111110110;1101 - Down2 (2-steps)
+dw 00010111111100;1110 - Unused
+dw 00010111111110;1111 - Unused
+dw 10101010101010; Blinks LED (allegedly) if keep repeating
 
 ; In this case, just the Turn HEAD LED ON COMMAND IS SENT
 ; Currently just hardcodes the color into it
 test_command_array db 00h,00h,00h,00h,00h,0Ah,00h,0Ah,0Ah,0Ah,00h,0Ah,00h,0Ah,0Ah,00h 
-
-
-
-
 
 CODESEG ENDS
 END PROGRAM
