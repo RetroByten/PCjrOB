@@ -1,4 +1,10 @@
 TITLE PCjrOB Test Program
+PAGE 66,80 ; 66 lines per page, 80 characters/line
+
+
+
+
+
 
 ; This program will send the "TEST" command to R.O.B., turning on the head LED
 
@@ -241,23 +247,23 @@ current_color db ?
 ;http://problemkaputt.de/everynes.htm#robroboticoperatingbuddy
 ; Preface - 000101 w1x1y1z0
 command_words dw 00010101010100B ;0000 - Unused
-dw 00010101010110;0001 - Reset
-dw 00010101010100;0010 - Down1 (1-step)
-dw 00010101011110;0011 - Unused
-dw 00010101110100;0100 - Left (1-step)
-dw 00010101110110;0101 - Up2 (2-steps)
-dw 00010101111100;0110 - Close (Arms)
-dw 00010101111110;0111 - Unused
+dw 00010101010110B;0001 - Reset
+dw 00010101010100B;0010 - Down1 (1-step)
+dw 00010101011110B;0011 - Unused
+dw 00010101110100B;0100 - Left (1-step)
+dw 00010101110110B;0101 - Up2 (2-steps)
+dw 00010101111100B;0110 - Close (Arms)
+dw 00010101111110B;0111 - Unused
 
-dw 00010111010100;1000 - Right (1-step)
-dw 00010111010110;1001 - TEST (LED ON)
-dw 00010111011100;1010 - Open (Arms)
-dw 00010111011110;1011 - Unused
-dw 00010111110100;1100 - Up1 (1-step)
-dw 00010111110110;1101 - Down2 (2-steps)
-dw 00010111111100;1110 - Unused
-dw 00010111111110;1111 - Unused
-dw 10101010101010; Blinks LED (allegedly) if keep repeating
+dw 00010111010100B;1000 - Right (1-step)
+dw 00010111010110B;1001 - TEST (LED ON)
+dw 00010111011100B;1010 - Open (Arms)
+dw 00010111011110B;1011 - Unused
+dw 00010111110100B;1100 - Up1 (1-step)
+dw 00010111110110B;1101 - Down2 (2-steps)
+dw 00010111111100B;1110 - Unused
+dw 00010111111110B;1111 - Unused
+dw 10101010101010B; Blinks LED (allegedly) if keep repeating
 
 ; In this case, just the Turn HEAD LED ON COMMAND IS SENT
 ; Currently just hardcodes the color into it
