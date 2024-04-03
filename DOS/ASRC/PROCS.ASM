@@ -132,160 +132,60 @@ VBLANK_INT ENDP
 
 GAME_MODE_MENU_P PROC NEAR
 	call	SWITCH_TO_VIDEOA
+MENU_KEY_LOOP:
+	;; KEY PRESS LOGIC
+	;; Check if 'q' - if equal Quit, direct case, MENU_DONE
+	;; Check if 'i' - if equal command 16, direct case, EXECUTE COMMAND
+	;; Check if below '0', if so invalid, jump back up
+	;; Check if above '9', if not means number is between 0 and 9
+		;; subtract '0', EXECUTE COMMAND
+	;; Check if below 'a', if so invalid, jump back up
+	;; Check if above 'f', if not means number is between a and for
+		;; subtract 'a', add 0Ah, EXECUTE COMMAND 
+	;; ERROR_IN_LOGIC: jump back up
 	
-G_MENU_LOOP:
 	mov		ah,svc_keyboard_read_chr
 	int		int_keyboard_16
-G_MENU_Q:
-	cmp		al,'q'
-	jne		G_MENU_I ; ----
-	mov		al,game_mode_exit
-	mov		[ram_game_mode],al
-	jmp		G_MENU_LOOP_END
-;; Check if i
-G_MENU_I:
-	cmp		al,'i'
-	jne		G_MENU_0 ; ----
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,10h ; Command[16]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_0:
-	cmp		al,'0' ; -----
-	jne		G_MENU_1 ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,0h ; Command [0]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_1:
-	cmp		al,'1' ; -----
-	jne		G_MENU_2 ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,1h ; Command [1]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_2:
-	cmp		al,'2' ; -----
-	jne		G_MENU_3 ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,2h ; Command [2]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_3:
-	cmp		al,'3' ; -----
-	jne		G_MENU_4 ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,3h ; Command [3]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_4:
-	cmp		al,'4' ; -----
-	jne		G_MENU_5 ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,4h ; Command [4]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_5:
-	cmp		al,'5' ; -----
-	jne		G_MENU_6 ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,5h ; Command [5]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_6:
-	cmp		al,'6' ; -----
-	jne		G_MENU_7 ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,6h ; Command [6]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----	
-G_MENU_7:
-	cmp		al,'7' ; -----
-	jne		G_MENU_8 ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,7h ; Command [7]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----	
-G_MENU_8:
-	cmp		al,'8' ; -----
-	jne		G_MENU_9 ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,8h ; Command [8]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_9:
-	cmp		al,'9' ; -----
-	jne		G_MENU_A ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,9h ; Command [9]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----	
-G_MENU_A:
-	cmp		al,'a' ; -----
-	jne		G_MENU_B ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,0Ah ; Command [A]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----		
-G_MENU_B:
-	cmp		al,'b' ; -----
-	jne		G_MENU_C ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,0Bh ; Command [B]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_C:
-	cmp		al,'c' ; -----
-	jne		G_MENU_D ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,0Ch ; Command [C]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_D:
-	cmp		al,'d' ; -----
-	jne		G_MENU_E ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,0Dh ; Command [D]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
-G_MENU_E:
-	cmp		al,'e' ; -----
-	jne		G_MENU_F ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,0Eh ; Command [E]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----	
-G_MENU_F:
-	cmp		al,'f' ; -----
-	jne		G_MENU_LOOP_CONT ; -------
-	mov		al,game_mode_cmd
-	mov		[ram_game_mode],al
-	mov		al,0Fh ; Command [F]
-	mov		[ram_command_index],al
-	jmp		G_MENU_LOOP_END ; -----
 	
-G_MENU_LOOP_CONT:
-	jmp		G_MENU_LOOP
-
-G_MENU_LOOP_END:
-	
-	ret
+	cmp		al,'q' ;; Quit
+	jne		MENU_I 
+		mov		al,game_mode_exit
+		mov		[ram_game_mode],al ;; Set mode to EXIT
+		ret ;; RETURN
+MENU_I:
+	cmp		al,'i' ;; Special case
+	jne		MENU_TOO_LOW
+		mov		al,10h ; Command [16]
+		mov		[ram_command_index],al ;; Save CMD
+		mov		al,game_mode_cmd
+		mov		[ram_game_mode],al  ;; Set mode to CMD
+		ret ;; RETURN
+MENU_TOO_LOW:
+	cmp		al,'0' ; if < '0', invalid entry
+	jb		MENU_KEY_LOOP ;; INVALID, TRY AGAIN
+MENU_NUM:
+	cmp		al,'9' ;; '0' <= al <= '9', valid!
+	ja		MENU_BELOW_LETTER
+		sub		al,'0' ; Normalize to 0-9h
+		mov		[ram_command_index],al ;; Save CMD
+		mov		al,game_mode_cmd
+		mov		[ram_game_mode],al  ;; Set mode to CMD
+		ret ;; RETURN
+MENU_BELOW_LETTER:
+	cmp		al,'a' ; if '9' < al < 'a', invalid entry
+	jb		MENU_KEY_LOOP ;; INVALID, TRY AGAIN
+MENU_LETTER:
+	cmp		al,'f'
+	ja		MENU_KEY_LOOP ;; INVALID, TRY AGAIN
+		;; if 'a' <= al <= 'f', valid!
+		sub		al,'a' ;; Normalize to 0
+		add		al,0ah ;; Normalize to A-Fh
+		mov		[ram_command_index],al  ;; Save CMD
+		mov		al,game_mode_cmd
+		mov		[ram_game_mode],al  ;; Set mode to CMD
+		ret ;; RETURN
+ERROR_IN_LOGIC: ;; SHOULD NOT GET HERE
+	jmp		MENU_KEY_LOOP
 GAME_MODE_MENU_P ENDP
 
 GAME_MODE_CMD_P PROC NEAR
