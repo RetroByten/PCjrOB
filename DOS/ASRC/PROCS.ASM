@@ -156,10 +156,7 @@ MENU_I:
 	cmp		al,'i' ;; Special case
 	jne		MENU_TOO_LOW
 		mov		al,10h ; Command [16]
-		mov		[ram_command_index],al ;; Save CMD
-		mov		al,game_mode_cmd
-		mov		[ram_game_mode],al  ;; Set mode to CMD
-		ret ;; RETURN
+		jmp short GOOD_CMD
 MENU_TOO_LOW:
 	cmp		al,'0' ; if < '0', invalid entry
 	jb		MENU_KEY_LOOP ;; INVALID, TRY AGAIN
@@ -167,10 +164,7 @@ MENU_NUM:
 	cmp		al,'9' ;; '0' <= al <= '9', valid!
 	ja		MENU_BELOW_LETTER
 		sub		al,'0' ; Normalize to 0-9h
-		mov		[ram_command_index],al ;; Save CMD
-		mov		al,game_mode_cmd
-		mov		[ram_game_mode],al  ;; Set mode to CMD
-		ret ;; RETURN
+		jmp short GOOD_CMD
 MENU_BELOW_LETTER:
 	cmp		al,'a' ; if '9' < al < 'a', invalid entry
 	jb		MENU_KEY_LOOP ;; INVALID, TRY AGAIN
@@ -180,12 +174,14 @@ MENU_LETTER:
 		;; if 'a' <= al <= 'f', valid!
 		sub		al,'a' ;; Normalize to 0
 		add		al,0ah ;; Normalize to A-Fh
-		mov		[ram_command_index],al  ;; Save CMD
-		mov		al,game_mode_cmd
-		mov		[ram_game_mode],al  ;; Set mode to CMD
-		ret ;; RETURN
+		jmp short GOOD_CMD
 ERROR_IN_LOGIC: ;; SHOULD NOT GET HERE
 	jmp		MENU_KEY_LOOP
+GOOD_CMD:
+	mov		[ram_command_index],al ;; Save CMD
+	mov		al,game_mode_cmd
+	mov		[ram_game_mode],al  ;; Set mode to CMD
+	ret ;; RETURN
 GAME_MODE_MENU_P ENDP
 
 GAME_MODE_CMD_P PROC NEAR
