@@ -41,8 +41,7 @@ int_video_10					EQU	10h
 		val_mode_320_200_co		EQU 04h
 		val_mode_160_200_co		EQU 08h
 		val_mode_a				EQU val_mode_40_25_bw
-		;val_mode_b				EQU val_mode_160_200_co
-		val_mode_b				EQU val_mode_320_200_co
+		val_mode_b				EQU val_mode_160_200_co
 	svc_video_set_page			EQU 05h
 		val_set_cpu_page		EQU 81h
 		val_set_crt_page		EQU 82h
