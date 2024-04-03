@@ -1,34 +1,22 @@
-TITLE PCjrOB Test Program
+TITLE CGAROB Test Program
 PAGE 66,80 ; 66 lines per page, 80 characters/line
 
 ;; This program will allow the user to send commands to the R.O.B.
+;; Should work on CGA compatible computers (IBM PC, IBM PCjr)
 
-;; Changes from Original:
+;; Changes from Original PCJROB Program:
 ;; Detect PCjr or not (PC)
 ;; Switch to 320x200
 ;; Poll 03DAh bit 3 for vertical retrace - PC
-;; Swap palettes using bits 3-0 (IRGB) of 03D9h
+;; Swap palettes using bits 3-0 (IRGB) of 03D9h - PC
+;; Swap palettes using vga_address_palette0 - PCjr
 
-%OUT Processing EQUATES.ASM
-;; General
-;bytes_per_word					EQU 02h
-;nybble_bit_shift				EQU 04h
-
-;; Modes
-;game_mode_waiting_for_game		EQU 00h
-;game_mode_waiting_for_vblank	EQU 01h
-;game_mode_exit					EQU 02h
-;game_mode_menu					EQU 03h
-;game_mode_cmd					EQU 04h
-
+%OUT Processing EQUATES
 ;; Ports
-;port_pic_cmd					EQU 20h ; PIC Command port
-;	val_pic_eoi					EQU 20h ; PIC "End of Interrupt" value to acknowledge interrupt
-;port_pic_data					EQU 21h ; PIC Data port
-port_cga_color					EQU 3D9h 
-port_vga_register				EQU 3DAh
-	vga_address_mode_ctrl1		EQU 00h
-	vga_address_palette0		EQU 10h
+port_cga_color					EQU 3D9h ; PC
+port_vga_register				EQU 3DAh ; PC = CRTC Status, PCjr VGA
+	vga_address_mode_ctrl1		EQU 00h  ; PCjr VGA CTRL1 Register
+	vga_address_palette0		EQU 10h  ; PCjr VGA Palette 0 Register
 
 ;; Memory Segments
 segment_interrupt_vector_table	EQU 0000h
@@ -37,42 +25,23 @@ segment_bios_rom				EQU 0F000h
 	bios_rom_machine_id			EQU 0FFFEh ;
 	val_machine_id_pcjr			EQU 0FDh
 ;; Masks
-;mask_enable_vertical_retrace	EQU 0DFh ; 1101 1111
 mask_poll_vertical_retrace_bit	EQU 08h ; xxx0 1000, Reg 3DA
 
 ;; Colors
 color_black						equ 00h
 color_green						equ 0Ah
-;color_yellow					equ 0Eh
-
-;; Video memory words
-;video_memory_size_bytes			EQU 4000h
-;video_memory_size_words			EQU video_memory_size_bytes / bytes_per_word
 
 ;; Interrupts
 int_video_10					EQU	10h
 	svc_video_set_mode			EQU 00h
-		val_mode_40_25_bw		EQU 00h
-		val_mode_80_25_bw		EQU 02h
 		val_mode_320_200_co		EQU 04h
-		val_mode_160_200_co		EQU 08h
-		;val_mode_a				EQU val_mode_40_25_bw
-		;val_mode_b				EQU val_mode_160_200_co
-		;val_mode_b				EQU val_mode_320_200_co
-	svc_video_set_palette		EQU 0Bh
 	svc_video_get_mode			EQU 0Fh
-	svc_video_write_char_tty	EQU	0Eh
-	tty_page					EQU 00h
 int_keyboard_16					EQU 16h
 	svc_keyboard_read_chr		EQU 00h
-	svc_keyboard_input_status	EQU 01h
-	val_esc_key					EQU 1Bh
 int_dos_21						EQU 21h
 	svc_dos_print_str			EQU 09h
-	svc_dos_set_interrupt		EQU 25h
 	svc_dos_terminate			EQU 4Ch
 		val_dos_terminate_0		EQU 00h
-
 
 CODESEG SEGMENT
 	assume CS:CODESEG, DS:CODESEG, SS:CODESEG
@@ -80,9 +49,7 @@ ORG 100h
 PROGRAM: ; Needed for COM to later terminate the program
 jmp	MAIN
 
-%OUT Processing PROCS.ASM
-
-%OUT Processing MAIN
+%OUT Processing CODE
 MAIN PROC NEAR
 SETUP:
 	mov		ax,cs
@@ -91,8 +58,7 @@ SETUP:
 	mov		ah,svc_video_get_mode
 	int		int_video_10 ; AL=videomode, BH=active page
 	mov		[ram_save_video_mode],al
-	;mov	[ram_save_video_page],bh ;; TODO - eventually look up if valid on 5150
-	;; SAVE_MACHINE_ID - Not strictly necessary but saves us segment switches
+	;; SAVE_MACHINE_ID - Not strictly necessary but saves us segment switches when using
 	mov		ax,segment_bios_rom
 	mov		es,ax
 	mov		al,es:[bios_rom_machine_id]
@@ -107,8 +73,16 @@ MENU:
 	mov		ah,svc_dos_print_str
 	int		int_dos_21
 MENU_KEY_LOOP:
+	;; Read next keystroke
 	mov		ah,svc_keyboard_read_chr
 	int		int_keyboard_16
+
+	;; Valid Menu options:
+	;; '0' - '9' = Command Index 00h-09h
+	;; 'a' - 'f' = Command Index 0Ah-0Fh
+	;; 'i' = Command Index 10h
+	;; 'q' = Quit
+	;; All others: Invalid Index, loop back and try again
 
 	;; KEY PRESS LOGIC
 	;; Check if 'q' - if equal Quit, direct case, MENU_DONE
@@ -128,7 +102,7 @@ MENU_I:
 	jne		MENU_TOO_LOW
 		mov		al,10h ; Command [16]
 		mov		[ram_command_index],al
-		jmp		COMMAND ;; EXECUTE COMMAND
+		jmp	short	COMMAND ;; EXECUTE COMMAND
 MENU_TOO_LOW:
 	cmp		al,'0'
 	jb		MENU_KEY_LOOP ;; INVALID
@@ -138,7 +112,7 @@ MENU_NUM:
 		;; Valid number here
 		sub		al,'0' ; Result is 0-9
 		mov		[ram_command_index],al
-		jmp		COMMAND ;; EXECUTE COMMAND
+		jmp	short	COMMAND ;; EXECUTE COMMAND
 MENU_BELOW_LETTER:
 	cmp		al,'a'
 	jb		MENU_KEY_LOOP ;; INVALID
@@ -148,12 +122,11 @@ MENU_LETTER:
 		sub		al,'a'
 		add		al,0ah ;; Result is A-F
 		mov		[ram_command_index],al
-		jmp		COMMAND ;; EXECUTE COMMAND
+		jmp	short	COMMAND ;; EXECUTE COMMAND
 ERROR_IN_LOGIC: ;; SHOULD NOT GET HERE
 	jmp		MENU_KEY_LOOP
 MENU_DONE:
 	jmp		RESTORE_VIDEO
-	
 COMMAND: ;; Command index is in [ram_command_index]
 	;; Initialize CMD Video
 	mov		al,val_mode_320_200_co
@@ -229,14 +202,9 @@ PCJR: ; We're a PCjr, we've got some work to do
 	in		al,dx ; We're done Now
 	sti
 VBLANK_LOOP:
-	;jmp	PREP_FOR_VBLANK
 	jmp COMMAND_WAIT_FOR_NOT_VBLANK
-	
 COMMAND_DONE:
 	jmp		MENU ;; Go back to the menu
-	
-	
-	
 RESTORE_VIDEO:
 	mov		ax,cs
 	mov		ds,ax
@@ -250,24 +218,14 @@ HALT:
 	jmp		HALT ; In case DOS somehow doesn't end the program, should never reach
 MAIN ENDP
 
+%OUT Processing RAM
 ;; RAM Values
 ram_save_video_mode db ?
-ram_save_video_page db ?
 ram_machine_id db ?
-ram_game_mode db ?
 ram_command_index db ?
 ram_command_word dw ?
 ram_command_count db ?
 
-ram_old_vblank_offset dw ?
-ram_old_vblank_segment dw ?
-
-ram_hw_int_masks db ?
-
-;ram_current_color db ?
-
-screenA db "Screen A$"
-screenB db "Screen B$"
 ; References for commands
 ;https://www.nesdev.org/wiki/R.O.B.
 ;http://problemkaputt.de/everynes.htm#robroboticoperatingbuddy
