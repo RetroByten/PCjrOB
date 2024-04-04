@@ -73,16 +73,11 @@ ram_game_mode db ?
 ram_command_index db ?
 ram_command_word dw ?
 ram_command_count db ?
-
 ram_old_vblank_offset dw ?
 ram_old_vblank_segment dw ?
-
 ram_hw_int_masks db ?
-
 ram_current_color db ?
 
-screenA db "Screen A$"
-screenB db "Screen B$"
 ; References for commands
 ;https://www.nesdev.org/wiki/R.O.B.
 ;http://problemkaputt.de/everynes.htm#robroboticoperatingbuddy

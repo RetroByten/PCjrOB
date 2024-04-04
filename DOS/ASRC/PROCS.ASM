@@ -26,7 +26,7 @@ RESTORE_VIDEO ENDP
 FILL_SCREEN PROC NEAR ; al contains nibble to fill
 	push	cx
 	push	ax
-		mov		cx,4
+		mov		cx,nybble_bit_shift
 		shl		ax,cl
 	pop		cx ; CH contains 1 pixel, high nibble
 	or		ax,cx ; AL now contains 2 pixels
@@ -38,11 +38,6 @@ FILL_SCREEN PROC NEAR ; al contains nibble to fill
 	pop		cx
 	ret
 FILL_SCREEN ENDP
-
-;;; Set CRTCPU
-; al 83 = crt + cpu
-; al 80 = read
-; bh = crt, bl = cpu
 
 SWITCH_TO_VIDEOA PROC NEAR
 	;; Setup Video
@@ -60,10 +55,7 @@ SWITCH_TO_VIDEOB PROC NEAR
 	;; Setup Video
 	mov		ax,(svc_video_set_mode SHL 8) OR val_mode_b
 	int		int_video_10 ; Set video mode
-	;; Setup page
-	;mov		ax,(svc_video_set_page SHL 8) OR val_set_cpucrt_page
-	;mov		bx,(val_page_1 SHL 8) OR val_page_1
-	;int		int_video_10
+
 	; Fill with color 0 by default
 	mov		al,color_black
 	call	FILL_SCREEN
@@ -123,57 +115,6 @@ GOOD_CMD:
 	mov		[ram_game_mode],al  ;; Set mode to CMD
 	ret ;; RETURN
 GAME_MODE_MENU_P ENDP
-
-
-
-	;; TODO - this is bad form to do a bunch of work in the int
-	;; Eventually fix this to only do the palette swap
-	;; And move the logic into the main code
-;	sti ; Disable Interrupts
-;	push	ax ; Save Regs
-;	push	dx
-	;; DO WORK
-	;; Figure out current frame color
-;	mov		ax,cs:[ram_command_word]
-;	shl		ax,1 ; grab next bit
-;	mov		cs:[ram_command_word],ax
-;	jc		SET_GREEN
-;SET_BLACK:
-;	mov		al,color_black
-;	jmp		SET_COLOR
-;SET_GREEN:
-;	mov		al,color_green
-;SET_COLOR:
-;	mov		dx,port_vga_register
-;	push	ax
-;	cli
-;	in		al,dx ; force VGA register into address mode
-;	mov		al,vga_address_palette0
-;	out		dx,al ; Set VGA address register to palette 0, now in value mode
-;	pop		ax
-;	out		dx,al ; Put color into palette 0, back in address mode
-;	mov		al,vga_address_mode_ctrl1 ; Put in 
-;	out		dx,al ; Sets address to < 10h
-;	in		al,dx ; We're done now
-;	sti
-
-	;; Check if done with command
-;	mov		al,cs:[ram_command_count]
-;	inc		al
-;	mov		cs:[ram_command_count],al
-;	cmp		al,10h ; 16 Frames
-;	jne		VBLANK_INT_ACKRET
-;VBLANK_INT_COMPLETE:
-;	mov		al,game_mode_waiting_for_game
-;	mov		cs:[ram_game_mode],al
-	;; DONE work
-;VBLANK_INT_ACKRET:
-;	mov		al,val_pic_eoi
-;	out		port_pic_cmd,al ; Acknowledge the hardware interrupt
-;	pop		dx
-;	pop		ax ; Restore regs
-;	iret
-
 
 VBLANK_INT PROC NEAR
 	sti ; Enable Interrupts
@@ -291,90 +232,5 @@ COMMAND_DONE:
 	mov		[ram_game_mode],al
 	pop		es
 	ret
-	;call	SWITCH_TO_VIDEOB
-	;; Setup vblank routine
-	;; Let it run 16x
-	;; Unsetup vblank routine
-	;; Go back to menu1
-	
-	;xor		bh,bh
-	;mov		bl,[ram_command_index]; Retrieve intended command index
-	;shl		bx,1 ; Multiply by 2 (because it is indexing a word)
-	;mov		ax,[command_words][bx] ; retrieve actual command
-	;mov		[ram_command_word],ax ; Store command word
-	;xor		al,al ; Set current shift count to 0
-	;mov		[ram_command_count],al ; Will be used to shift through the bits
-	
-	; Save Vertical Retrace interrupt offset
-	;push	es
-	;xor		ax,ax
-	;mov		es,ax ; Set ES to 0
-	;mov		ax,es:[int_vblank_0D_offset]
-	;mov		[ram_old_vblank_offset],ax
-	;mov		ax,es:[int_vblank_0D_segment]
-	;mov		[ram_old_vblank_segment],ax
-	;pop		es
-	
-	; Save HW mask
-	;in		al,port_pic_data
-	;mov		[ram_hw_int_masks],al
-	
-	; Disable interrupts
-	;cli
-	; Set vertical retrace interrupt
-	;push	es
-	;xor		ax,ax
-	;mov		es,ax ; Set ES to 0
-	;mov		ax,offset VBLANK_INT
-	;mov		es:[int_vblank_0D_offset],ax
-	;mov		ax,cs
-	;mov		es:[int_vblank_0D_segment],ax
-	;pop		es
-	; Enable interrupts
-	;sti
-	
-	;; Unmask vblank
-	;in		al,port_pic_data
-	;and		al,mask_enable_vertical_retrace
-	;cli
-	;out		port_pic_data,al ;; At this point, VBLANK IS HOT
-	;sti
-
-	; Set game mode to "waiting_for_vblank"
-	;mov		al,game_mode_waiting_for_vblank
-	;mov		[ram_game_mode],al
-
-	;; Wait for VBLANK to set mode to waiting_for_game
-;GAME_MODE_CMD_WAIT:
-	;mov		al,[ram_game_mode]
-	;cmp		al,game_mode_waiting_for_game
-	;jne		GAME_MODE_CMD_WAIT
-
-	;; Restore HW Mask VBLANK
-	;cli
-	;mov		al,[ram_hw_int_masks]
-	;out		port_pic_data,al ;; AT THIS POINT, VBLANK IS COLD
-	;sti
-	
-	;; Disable interrupts
-	;cli
-	;push	es
-	;xor		ax,ax
-	;mov		es,ax ; Set ES to 0
-	;; Restore vertical retrace interrupt
-	;mov		[ram_old_vblank_offset],ax
-	;mov		ax,es:[int_vblank_0D_offset]
-	;mov		[ram_old_vblank_segment],ax
-	;mov		ax,es:[int_vblank_0D_segment]
-	;pop		es
-	;; Enable interrupts
-	;sti
-	
-	;; Set mode back to menu
-	;mov		al,game_mode_menu
-	;mov		[ram_game_mode],al
-;GAME_MODE_END:
-	;ret
 GAME_MODE_CMD_P ENDP
-
 

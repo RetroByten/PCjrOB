@@ -27,7 +27,6 @@ mask_enable_vertical_retrace	EQU 0DFh ; 1101 1111
 ;; Colors
 color_black						equ 00h
 color_green						equ 0Ah
-;color_yellow					equ 0Eh
 
 ;; Video memory words
 video_memory_size_bytes			EQU 4000h
@@ -37,28 +36,17 @@ video_memory_size_words			EQU video_memory_size_bytes / bytes_per_word
 int_video_10					EQU	10h
 	svc_video_set_mode			EQU 00h
 		val_mode_40_25_bw		EQU 00h
-		val_mode_80_25_bw		EQU 02h
-		val_mode_320_200_co		EQU 04h
 		val_mode_160_200_co		EQU 08h
 		val_mode_a				EQU val_mode_40_25_bw
 		val_mode_b				EQU val_mode_160_200_co
 	svc_video_set_page			EQU 05h
-		val_set_cpu_page		EQU 81h
-		val_set_crt_page		EQU 82h
-		val_set_cpucrt_page		EQU 83h
-		val_page_0				EQU 07h
-		val_page_1				EQU 06h
-	svc_video_set_palette		EQU 0Bh
 	svc_video_get_mode			EQU 0Fh
-	svc_video_write_char_tty	EQU	0Eh
-	tty_page					EQU 00h
 int_keyboard_16					EQU 16h
 	svc_keyboard_read_chr		EQU 00h
 	svc_keyboard_input_status	EQU 01h
 	val_esc_key					EQU 1Bh
 int_dos_21						EQU 21h
 	svc_dos_print_str			EQU 09h
-	svc_dos_set_interrupt		EQU 25h
 	svc_dos_terminate			EQU 4Ch
 		val_dos_terminate_0		EQU 00h
 int_vblank_0D					EQU 0Dh
