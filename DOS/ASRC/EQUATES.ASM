@@ -27,7 +27,7 @@ mask_enable_vertical_retrace	EQU 0DFh ; 1101 1111
 ;; Colors
 color_black						equ 00h
 color_green						equ 0Ah
-color_yellow					equ 0Eh
+;color_yellow					equ 0Eh
 
 ;; Video memory words
 video_memory_size_bytes			EQU 4000h

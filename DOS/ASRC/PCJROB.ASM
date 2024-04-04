@@ -79,7 +79,7 @@ ram_old_vblank_segment dw ?
 
 ram_hw_int_masks db ?
 
-;ram_current_color db ?
+ram_current_color db ?
 
 screenA db "Screen A$"
 screenB db "Screen B$"

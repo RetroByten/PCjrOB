@@ -155,7 +155,7 @@ PREP_FOR_VBLANK:
 	
 	;; Check command count
 	mov		al,[ram_command_count]
-	cmp		al,0Fh ; Commands are 16 bits (0-15), incremented after this point so bail "at" 16
+	cmp		al,10h ; Commands are 16 bits (0-15), incremented after this point so bail "at" 16
 		je		COMMAND_DONE ;; If 16, we're done, go back to the MENU
 	inc		al ;; Otherwise, increment AL
 	mov		[ram_command_count],al ; Store 
